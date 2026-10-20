@@ -3,8 +3,8 @@
   const DIRS = window.DIRECTIONS;
   const MOSCOW = [55.7558, 37.6173];
   const isMobile = () => window.matchMedia('(max-width: 760px)').matches;
-  const PEEK = 140;  // видимая высота свёрнутой шторки на телефоне (как --peek в CSS)
-  const HALF = 0.5;  // доля шторки, видимая в положении «наполовину»
+  const PEEK = 132;  // видимая высота свёрнутой шторки на телефоне (как --peek в CSS)
+  const HALF = 0.6;  // доля шторки, видимая в положении «наполовину» (как translateY(40%) в CSS)
   // Свёрнутая панель восстанавливается до первого центрирования карты
   const COLLAPSE_KEY = 'vuzmap.panelCollapsed';
   try { if (localStorage.getItem(COLLAPSE_KEY) === '1') document.body.classList.add('panel-collapsed'); } catch {}
@@ -262,6 +262,12 @@
     $('#results-count').textContent = `${visible.length} ${plural(visible.length, 'заведение', 'заведения', 'заведений')} на карте`;
     updateSideBits();
     saveHash();
+    // Телефон: счётчики на кнопках «Список» и «Фильтры»
+    $('#m-list-count').textContent = visible.length;
+    const active = (state.type.size < TYPES.length) + (state.region.size < 2) + (state.own.size < 2) + state.dirs.size + state.levels.size
+      + state.budget + state.dorm + state.fav + (state.radius && home ? 1 : 0);
+    $('#m-filters-count').textContent = active || '';
+    $('#m-filters').classList.toggle('has-value', active > 0);
 
     const ul = $('#results');
     if (!visible.length) {
@@ -973,12 +979,60 @@
   }
   $('#panel-collapse').addEventListener('click', () => setCollapsed(!isCollapsed()));
 
-  // Мобильная шторка
-  $('#panel-grip').addEventListener('click', () => {
+  // Мобильная шторка: тянется пальцем за верх (полоска, поиск, кнопки), при отпускании встаёт в ближайшее положение.
+  // Короткое касание полоски — следующее положение: свёрнута → наполовину → открыта → свёрнута.
+  const sheetPos = () => { const p = $('#panel'); return p.classList.contains('open') ? 'open' : p.classList.contains('half') ? 'half' : ''; };
+  (() => {
     const p = $('#panel');
-    setSheet(p.classList.contains('open') || p.classList.contains('half') ? '' : 'open');
-  });
+    let startY = 0, startT = 0, dragging = false, moved = false;
+    const offsetOf = pos => { const h = p.offsetHeight; return pos === 'open' ? 0 : pos === 'half' ? h * (1 - HALF) : h - PEEK; };
+    const handle = e => isMobile() && e.target.closest('#panel-grip, .panel-top, .m-bar') && !e.target.closest('input, button:not(#panel-grip)');
+    p.addEventListener('pointerdown', e => {
+      if (!handle(e)) return;
+      dragging = true; moved = false;
+      startY = e.clientY; startT = offsetOf(sheetPos());
+      try { p.setPointerCapture(e.pointerId); } catch {}
+    });
+    p.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dy = e.clientY - startY;
+      if (!moved && Math.abs(dy) < 6) return;
+      moved = true;
+      p.style.transition = 'none';
+      p.style.transform = `translateY(${Math.max(0, Math.min(p.offsetHeight - PEEK, startT + dy))}px)`;
+    });
+    const end = e => {
+      if (!dragging) return;
+      dragging = false;
+      p.style.transition = ''; p.style.transform = '';
+      if (!moved) { if (e.target.closest('#panel-grip')) setSheet({ '': 'half', half: 'open', open: '' }[sheetPos()]); return; }
+      // ближайшее положение с учётом направления быстрого рывка
+      const t = Math.max(0, Math.min(p.offsetHeight - PEEK, startT + (e.clientY - startY)));
+      const opts = ['open', 'half', ''].map(pos => [pos, Math.abs(offsetOf(pos) - t)]).sort((a, b) => a[1] - b[1]);
+      setSheet(opts[0][0]);
+    };
+    p.addEventListener('pointerup', end);
+    p.addEventListener('pointercancel', end);
+  })();
   $('#search').addEventListener('focus', () => { if (isMobile()) setSheet('open'); });
+
+  // Телефон: кнопки под поиском
+  $('#m-calc').addEventListener('click', openCalc);
+  $('#m-list').addEventListener('click', () => {
+    if (!$('#view-calc').hidden) closeCalc();
+    if (state.selected !== null) closeCard();
+    document.body.classList.remove('m-filters-open');
+    $('#m-filters').setAttribute('aria-expanded', 'false');
+    setSheet('open');
+  });
+  $('#m-filters').addEventListener('click', () => {
+    if (!$('#view-calc').hidden) closeCalc();
+    if (state.selected !== null) closeCard();
+    const on = !document.body.classList.contains('m-filters-open');
+    document.body.classList.toggle('m-filters-open', on);
+    $('#m-filters').setAttribute('aria-expanded', String(on));
+    setSheet('open');
+  });
   map.on('click', () => { closeDirs(); if (isMobile()) setSheet(''); });
 
   const wantCalc = new URLSearchParams(location.hash.slice(1)).get('calc') === '1'; // читаем до того, как render перепишет адрес

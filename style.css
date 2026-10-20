@@ -366,8 +366,8 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 
 /* ───── Телефон: шторка снизу, чипсы сверху ───── */
 @media (max-width: 760px) {
-  :root { --peek: 140px; }
-  .legend-card, .panel-tab, .popover-head .hint { display: none; }
+  :root { --peek: 132px; }
+  .panel-tab, .popover-head .hint { display: none; }
   .popover { left: 12px !important; right: 12px; width: auto; }
   .leaflet-bottom.leaflet-right { right: 0; }
   .map-controls { right: 12px; bottom: calc(var(--peek) + 16px); transition: opacity .2s; }
@@ -377,7 +377,7 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
     border-radius: 16px 16px 0 0; box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.2);
     transform: translateY(calc(100% - var(--peek))); transition: transform .3s ease;
   }
-  .panel.half { transform: translateY(50%); }
+  .panel.half { transform: translateY(40%); }
   .panel.open { transform: translateY(0); }
   .panel-grip { display: block; flex: none; width: 100%; height: 20px; position: relative; }
   .panel-grip::after {
@@ -526,3 +526,40 @@ button { font: inherit; color: inherit; cursor: pointer; border: 0; background: 
 .calc-row.wide { grid-column: 1 / -1; }
 .calc-row.wide input { width: 72px; }
 
+
+/* ───── Телефон: быстрые кнопки, свёрнутые фильтры, компактная легенда ───── */
+.m-bar { display: none; }
+@media (max-width: 760px) {
+  .panel { height: 88vh; height: 88dvh; padding-bottom: env(safe-area-inset-bottom); }
+  .panel-grip { height: 22px; touch-action: none; cursor: grab; }
+  .panel-top { touch-action: none; padding-bottom: 8px; }
+  .m-bar { display: flex; gap: 6px; padding: 0 12px 10px; flex: none; touch-action: none; overflow-x: auto; scrollbar-width: none; }
+  .m-bar::-webkit-scrollbar { display: none; }
+  .m-pill {
+    flex: 1 1 auto; min-width: 0; height: 36px; padding: 0 8px; border-radius: 18px; border: 1px solid var(--line); background: var(--card);
+    font: 700 13px var(--font); color: var(--text); white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .m-pill .cnt { font-weight: 600; color: var(--faint); }
+  .m-pill.accent { background: var(--accent-soft); border-color: transparent; color: var(--accent-2); }
+  .m-pill.has-value, .m-filters-open #m-filters { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-2); }
+  .m-pill.has-value .cnt { color: var(--accent-2); }
+  /* большая кнопка калькулятора и фильтры — по кнопкам, чтобы список был виден */
+  .calc-cta { display: none; }
+  .chipbar { display: none; max-height: 52vh; }
+  .m-filters-open .chipbar { display: block; }
+  #panel:has(#view-card:not([hidden])) .m-bar, #panel:has(#view-calc:not([hidden])) .m-bar { display: none; }
+  /* «+/−» не нужны: карту приближают пальцами */
+  .map-controls .ctrl-stack { display: none; }
+  .map-controls { gap: 8px; }
+  /* компактная легенда сверху слева */
+  .legend-card { left: 8px; top: 8px; bottom: auto; padding: 6px 8px; font-size: 11px; gap: 3px; max-width: calc(100vw - 16px); }
+  .legend-card .legend-row:last-child { display: none; }
+  .legend-mode { font-size: 11px; }
+  .legend-mode select { padding: 2px 4px; font-size: 11px; }
+  .sheet-up .legend-card { opacity: 0; pointer-events: none; }
+  /* карточка: фото пониже, кнопки крупнее для пальца */
+  .card-hero.has-photo { height: 150px; }
+  .act .ic { width: 44px; height: 44px; }
+  .star { width: 40px; height: 40px; }
+  body .cookie-note { top: auto; bottom: calc(var(--peek) + 12px); }
+}
